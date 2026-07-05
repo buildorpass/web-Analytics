@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics Feature Test Lab</title>
+  <script src="/tracker.js" data-site="abc123" data-exclude="/admin,/preview" defer></script>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #fff;
+      --border: #dde1e8;
+      --text: #1a1d27;
+      --muted: #5c6478;
+      --accent: #3b6fd9;
+      --accent-soft: #e8efff;
+      --ok: #0d8a5b;
+      --warn: #b45309;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      line-height: 1.5;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 1.25rem;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 3rem;
+    }
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static !important; }
+    }
+    .sidebar {
+      position: sticky;
+      top: 1rem;
+      align-self: start;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .sidebar h2 { font-size: 0.9rem; margin: 0 0 0.75rem; }
+    .checklist { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; }
+    .checklist li { margin-bottom: 0.35rem; }
+    .checklist a {
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+      padding: 0.25rem 0;
+    }
+    .checklist a:hover { color: var(--accent); }
+    .checklist .num {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.7rem;
+      min-width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .checklist .done .num { background: #d1fae5; color: var(--ok); }
+    .progress {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    main h1 { font-size: 1.5rem; margin: 0 0 0.35rem; }
+    .lead { color: var(--muted); margin: 0 0 1.25rem; font-size: 0.95rem; }
+    .lead a { color: var(--accent); }
+    section.feature {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.15rem;
+      margin-bottom: 1rem;
+      scroll-margin-top: 1rem;
+    }
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .section-head .num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .section-head h2 { font-size: 1rem; margin: 0; flex: 1; }
+    .info-wrap { position: relative; flex-shrink: 0; }
+    .info-btn {
+      width: 1.2rem; height: 1.2rem; padding: 0;
+      border: 1px solid var(--border); border-radius: 50%;
+      background: var(--bg); color: var(--muted);
+      font-size: 0.65rem; font-weight: 700; font-style: italic;
+      font-family: Georgia, serif; cursor: pointer;
+    }
+    .info-btn:hover, .info-btn.open { color: var(--accent); border-color: var(--accent); }
+    .info-pop {
+      display: none; position: absolute; right: 0; top: calc(100% + 4px);
+      z-index: 10; width: 260px; padding: 0.65rem;
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12);
+      font-size: 0.8rem; color: var(--muted); font-weight: 400; text-align: left;
+    }
+    .info-pop.open { display: block; }
+    .verify {
+      background: var(--accent-soft);
+      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.82rem;
+      margin-bottom: 0.85rem;
+    }
+    .verify strong { color: var(--accent); }
+    .verify a { color: var(--accent); margin-left: 0.35rem; }
+    .hint { color: var(--muted); font-size: 0.88rem; margin: 0 0 0.75rem; }
+    .path-bar {
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.6rem 0.75rem; font-size: 0.9rem; margin-bottom: 0.75rem;
+    }
+    .path-bar strong { font-family: ui-monospace, monospace; }
+    .btn-grid { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.5rem; }
+    button, .btn-link {
+      font: inherit; font-size: 0.85rem;
+      border: 1px solid var(--border); background: #fff;
+      border-radius: 8px; padding: 0.45rem 0.7rem; cursor: pointer;
+      text-decoration: none; color: var(--text); display: inline-block;
+    }
+    button:hover, .btn-link:hover { border-color: var(--accent); background: var(--accent-soft); }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.65rem; margin-bottom: 0.75rem; }
+    label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; color: var(--muted); }
+    input, select { font: inherit; font-size: 0.9rem; padding: 0.45rem; border: 1px solid var(--border); border-radius: 8px; }
+    .mark-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+    .mark-row label { flex-direction: row; align-items: center; font-size: 0.85rem; color: var(--text); cursor: pointer; }
+    .log {
+      background: #0f1117; color: #c8cdd8; font-family: ui-monospace, monospace;
+      font-size: 0.75rem; border-radius: 8px; padding: 0.65rem; max-height: 160px; overflow-y: auto;
+    }
+    .log .ok { color: #6ee7a8; }
+    .log .err { color: #f87171; }
+    .badge { display: inline-block; background: var(--accent-soft); color: var(--accent);
+      font-size: 0.7rem; font-weight: 600; padding: 0.1rem 0.45rem; border-radius: 999px; }
+    code { background: var(--bg); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.85em; }
+    .two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.65rem; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Feature checklist</h2>
+      <ol class="checklist" id="checklist"></ol>
+      <div class="progress" id="progress">0 / 9 tested</div>
+      <p style="font-size:0.78rem;color:var(--muted);margin:0.75rem 0 0;">
+        <a href="/">← Dashboard</a><br>
+        <a href="/?range=today">Today</a> ·
+        <a href="/?range=7d">7 days</a>
+      </p>
+    </aside>
+
+    <main>
+      <h1>Feature test lab</h1>
+      <p class="lead">
+        Test one feature at a time. Each section explains what to click, what it tests,
+        and where to verify on the <a href="/">dashboard</a>.
+        Click <strong>i</strong> in each section for details.
+      </p>
+
+      <!-- sections injected by script -->
+      <div id="features"></div>
+
+      <section class="feature" id="f-log">
+        <div class="section-head">
+          <span class="num">∗</span>
+          <h2>Event log</h2>
+        </div>
+        <p class="hint">All tracker and API activity appears here.</p>
+        <div class="log" id="log"><div>Ready.</div></div>
+        <div class="btn-grid" style="margin-top:0.5rem;">
+          <button type="button" onclick="clearLog()">Clear log</button>
+          <button type="button" onclick="resetChecklist()">Reset checklist</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var SITE_ID = "abc123";
+    var API = "/api/event";
+    var spaEventCount = 0;
+
+    var FEATURES = [
+      {
+        id: "f1",
+        title: "Pageviews & SPA tracking",
+        info: "Tests the real tracker.js: initial page load, pushState, replaceState, and popstate. Each navigation sends a pageview beacon.",
+        verify: "Dashboard → Charts (Traffic tab), Pageviews stat, Top pages",
+        dash: "/?range=today",
+        html: '<div class="path-bar">Path: <strong id="path">/</strong><span id="event-count" style="margin-left:auto;color:var(--muted)"></span></div>' +
+          '<div class="btn-grid" id="spa-routes"></div>' +
+          '<div class="btn-grid"><button type="button" onclick="history.back()">← Back</button>' +
+          '<button type="button" onclick="replacePath(\'/replaced-route\')">replaceState</button>' +
+          '<button type="button" class="primary" onclick="burstSpa(5)">Burst 5 pages</button></div>'
+      },
+      {
+        id: "f2",
+        title: "Top pages chart",
+        info: "Navigate to specific paths to see them in the Charts → Pages tab and the Top pages table.",
+        verify: "Dashboard → Charts (Pages tab), Top pages table",
+        dash: "/?range=today",
+        html: '<div class="btn-grid">' +
+          '<button type="button" onclick="navigate(\'/blog/getting-started\')">/blog/getting-started</button>' +
+          '<button type="button" onclick="navigate(\'/pricing\')">/pricing</button>' +
+          '<button type="button" onclick="navigate(\'/docs/install\')">/docs/install</button></div>'
+      },
+      {
+        id: "f3",
+        title: "Referrers & direct traffic",
+        info: "Traffic lab sends events with referrer hostnames. Also try inbound landing pages — click through to register document.referrer.",
+        verify: "Dashboard → Charts (Sources tab), Top referrers table",
+        dash: "/?range=today",
+        html: '<p class="hint">Quick POST with referrer:</p>' +
+          '<div class="btn-grid"><button type="button" class="primary" onclick="sendRef(\'google.com\')">google.com</button>' +
+          '<button type="button" onclick="sendRef(\'news.ycombinator.com\')">Hacker News</button>' +
+          '<button type="button" onclick="sendRef(null)">Direct (no referrer)</button></div>' +
+          '<p class="hint" style="margin-top:0.5rem">Inbound landing pages:</p>' +
+          '<div class="btn-grid" id="referrer-links"></div>'
+      },
+      {
+        id: "f4",
+        title: "Screen size classes",
+        info: "Screen width is bucketed server-side: sm (&lt;640), md (&lt;1024), lg (1024+). Exact pixels are not stored.",
+        verify: "Dashboard → Charts (Technology tab) → Screen sizes",
+        dash: "/?range=today",
+        html: '<div class="btn-grid">' +
+          '<button type="button" onclick="sendScreen(390,\'/mobile-test\')">Mobile 390px (sm)</button>' +
+          '<button type="button" onclick="sendScreen(768,\'/tablet-test\')">Tablet 768px (md)</button>' +
+          '<button type="button" onclick="sendScreen(1440,\'/desktop-test\')">Desktop 1440px (lg)</button></div>'
+      },
+      {
+        id: "f5",
+        title: "UTM campaigns",
+        info: "Tracker reads utm_source, utm_medium, utm_campaign from the URL on each pageview. Only sanitized labels are stored.",
+        verify: "Dashboard → Charts (Campaigns tab), UTM tables",
+        dash: "/?range=today",
+        html: '<div class="btn-grid">' +
+          '<button type="button" class="primary" onclick="navigateUtm(\'/pricing\',\'google\',\'cpc\',\'spring_sale\')">Google CPC</button>' +
+          '<button type="button" onclick="navigateUtm(\'/blog\',\'newsletter\',\'email\',\'weekly_digest\')">Newsletter</button>' +
+          '<button type="button" onclick="navigateUtm(\'/products\',\'twitter\',\'social\',\'launch\')">Twitter launch</button></div>'
+      },
+      {
+        id: "f6",
+        title: "Custom events",
+        info: "localAnalytics.track(name) sends cookieless custom events — no user ID. Use for button clicks, signups, etc.",
+        verify: "Dashboard → Charts (Campaigns tab) → Custom events",
+        dash: "/?range=today",
+        html: '<div class="btn-grid">' +
+          '<button type="button" onclick="trackEvent(\'signup_click\')">signup_click</button>' +
+          '<button type="button" onclick="trackEvent(\'cta_hero\')">cta_hero</button>' +
+          '<button type="button" class="primary" onclick="trackEvent(\'newsletter_subscribe\')">newsletter_subscribe</button></div>'
+      },
+      {
+        id: "f7",
+        title: "Sessions, bounce & entry/exit",
+        info: "Deep session = 5 pageviews in one session (lowers bounce rate). Bounce = single pageview only. Entry/exit pages need multi-page sessions.",
+        verify: "Dashboard → Bounce rate, Entry pages, Exit pages, Avg sessions/visitor",
+        dash: "/?range=today",
+        html: '<div class="two-col">' +
+          '<div><p class="hint"><strong>Deep session</strong> (5 pages)</p>' +
+          '<button type="button" class="primary" onclick="runDeepSession()">Run deep session</button></div>' +
+          '<div><p class="hint"><strong>Bounce</strong> (1 page)</p>' +
+          '<button type="button" onclick="runBounce()">Send bounce</button></div></div>'
+      },
+      {
+        id: "f8",
+        title: "Browser / OS / device",
+        info: "Parsed server-side from your User-Agent. Open in a different browser or device to see multiple entries. Same browser = one row.",
+        verify: "Dashboard → Charts (Technology tab), breakdown tables",
+        dash: "/?range=today",
+        html: '<p class="hint">Your current browser is recorded automatically on each event. Try Chrome + Firefox + phone for variety, or run:</p>' +
+          '<button type="button" onclick="runPreset(\'pages\')">Preset: 12 pageviews (this browser)</button>'
+      },
+      {
+        id: "f10",
+        title: "Chart views tour",
+        info: "After seeding or sending events, open the dashboard Charts section and click each tab: Traffic, Pages, Sources, Visitors, Technology, Campaigns.",
+        verify: "Dashboard → Charts hub — try all 6 tabs (use Last 7 days if Today is empty)",
+        dash: "/?range=7d",
+        html: '<p class="hint">Run seed data first if charts look empty:</p>' +
+          '<div class="btn-grid">' +
+          '<a class="btn-link" href="/">Charts → Traffic</a>' +
+          '<span class="hint" style="align-self:center">Then click: Pages · Sources · Visitors · Technology · Campaigns</span></div>' +
+          '<p class="hint" style="margin-top:0.5rem">Tip: <code>pnpm seed</code> fills 7 days of sample data.</p>'
+      },
+      {
+        id: "f9",
+        title: "Export & auto-refresh",
+        info: "Dashboard toolbar: auto-refresh polls every 30s. CSV export contains aggregated counts only — no raw hashes.",
+        verify: "Dashboard → Enable auto-refresh, click Export CSV",
+        dash: "/",
+        html: '<div class="btn-grid">' +
+          '<a class="btn-link" href="/api/export?site=abc123&range=today" download>Download CSV (today)</a>' +
+          '<a class="btn-link" href="/">Open dashboard</a></div>' +
+          '<p class="hint">After sending events above, enable <strong>Auto-refresh</strong> on the dashboard and watch stats update.</p>'
+      }
+    ];
+
+    var SPA_ROUTES = ["/", "/about", "/pricing", "/blog/getting-started", "/docs"];
+    var REFERRER_LANDINGS = [
+      { label: "From Google", path: "/test/from-google.html" },
+      { label: "From HN", path: "/test/from-hn.html" },
+      { label: "From Reddit", path: "/test/from-reddit.html" }
+    ];
+
+    function log(msg, type) {
+      var el = document.getElementById("log");
+      var line = document.createElement("div");
+      if (type) line.className = type;
+      line.textContent = new Date().toLocaleTimeString() + " — " + msg;
+      el.appendChild(line);
+      el.scrollTop = el.scrollHeight;
+    }
+    function clearLog() { document.getElementById("log").innerHTML = "<div>Log cleared.</div>"; }
+
+    function toggleInfo(btn) {
+      var pop = btn.nextElementSibling;
+      var open = pop.classList.contains("open");
+      document.querySelectorAll(".info-pop.open").forEach(function (p) { p.classList.remove("open"); });
+      document.querySelectorAll(".info-btn.open").forEach(function (b) { b.classList.remove("open"); });
+      if (!open) { pop.classList.add("open"); btn.classList.add("open"); }
+    }
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest(".info-wrap")) {
+        document.querySelectorAll(".info-pop.open").forEach(function (p) { p.classList.remove("open"); });
+        document.querySelectorAll(".info-btn.open").forEach(function (b) { b.classList.remove("open"); });
+      }
+    });
+
+    function getDone() {
+      try { return JSON.parse(localStorage.getItem("testlab-done") || "{}"); }
+      catch (e) { return {}; }
+    }
+    function setDone(id, val) {
+      var d = getDone();
+      d[id] = val;
+      localStorage.setItem("testlab-done", JSON.stringify(d));
+      renderChecklist();
+    }
+    function resetChecklist() {
+      localStorage.removeItem("testlab-done");
+      renderChecklist();
+      log("Checklist reset");
+    }
+    function renderChecklist() {
+      var done = getDone();
+      var count = 0;
+      var ol = document.getElementById("checklist");
+      ol.innerHTML = "";
+      FEATURES.forEach(function (f, i) {
+        var li = document.createElement("li");
+        if (done[f.id]) { li.className = "done"; count++; }
+        var a = document.createElement("a");
+        a.href = "#" + f.id;
+        a.innerHTML = '<span class="num">' + (done[f.id] ? "✓" : (i + 1)) + '</span><span>' + f.title + '</span>';
+        li.appendChild(a);
+        ol.appendChild(li);
+      });
+      document.getElementById("progress").textContent = count + " / " + FEATURES.length + " tested";
+    }
+
+    function renderFeatures() {
+      var container = document.getElementById("features");
+      FEATURES.forEach(function (f, i) {
+        var sec = document.createElement("section");
+        sec.className = "feature";
+        sec.id = f.id;
+        sec.innerHTML =
+          '<div class="section-head">' +
+            '<span class="num">' + (i + 1) + '</span>' +
+            '<h2>' + f.title + '</h2>' +
+            '<div class="info-wrap"><button type="button" class="info-btn" onclick="toggleInfo(this)">i</button>' +
+            '<div class="info-pop">' + f.info + '</div></div>' +
+          '</div>' +
+          '<div class="verify"><strong>Verify:</strong> ' + f.verify +
+            '<a href="' + f.dash + '">Open dashboard →</a></div>' +
+          f.html +
+          '<div class="mark-row"><label><input type="checkbox" data-id="' + f.id + '" onchange="setDone(\'' + f.id + '\', this.checked)"> Mark as tested</label></div>';
+        container.appendChild(sec);
+        var cb = sec.querySelector("input[type=checkbox]");
+        cb.checked = !!getDone()[f.id];
+      });
+    }
+
+    function updatePath() {
+      document.getElementById("path").textContent = location.pathname + location.search || "/";
+    }
+    function navigate(path) {
+      history.pushState({}, "", path);
+      updatePath();
+      spaEventCount++;
+      document.getElementById("event-count").textContent = spaEventCount + " SPA events";
+      log("SPA → " + path);
+    }
+    function navigateUtm(path, source, medium, campaign) {
+      var qs = "?utm_source=" + encodeURIComponent(source) + "&utm_medium=" + encodeURIComponent(medium) + "&utm_campaign=" + encodeURIComponent(campaign);
+      history.pushState({}, "", path + qs);
+      updatePath();
+      log("UTM → " + path + qs, "ok");
+    }
+    function replacePath(path) { history.replaceState({}, "", path); updatePath(); log("replaceState → " + path); }
+    function burstSpa(n) {
+      var i = 0;
+      (function next() {
+        if (i >= n) return;
+        navigate(SPA_ROUTES[Math.floor(Math.random() * SPA_ROUTES.length)]);
+        i++; setTimeout(next, 400);
+      })();
+    }
+    function trackEvent(name) {
+      if (window.localAnalytics) { window.localAnalytics.track(name); log("track → " + name, "ok"); }
+      else log("localAnalytics not loaded", "err");
+    }
+    function postEvent(payload) {
+      return fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), keepalive: true });
+    }
+    function sendRef(ref) {
+      postEvent({ site_id: SITE_ID, pathname: "/ref-test-" + Date.now(), hostname: location.hostname || "localhost", referrer: ref, screen_width: 1440 })
+        .then(function (r) { log("referrer " + (ref || "direct") + " → " + r.status, r.status === 204 ? "ok" : "err"); });
+    }
+    function sendScreen(w, path) {
+      postEvent({ site_id: SITE_ID, pathname: path, hostname: location.hostname || "localhost", referrer: "google.com", screen_width: w })
+        .then(function (r) { log("screen " + w + " → " + r.status, r.status === 204 ? "ok" : "err"); });
+    }
+    function delay(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    async function sendBatch(events) {
+      for (var i = 0; i < events.length; i++) {
+        var e = events[i];
+        var r = await postEvent({ site_id: SITE_ID, pathname: e.path, hostname: location.hostname || "localhost", referrer: e.ref || null, screen_width: e.screen || 1440, utm_source: e.utm_source || null, utm_medium: e.utm_medium || null, utm_campaign: e.utm_campaign || null });
+        log("POST " + r.status + " " + e.path, r.status === 204 ? "ok" : "err");
+        await delay(100);
+      }
+      log("Batch done — refresh dashboard", "ok");
+    }
+    var PRESETS = {
+      pages: [
+        { path: "/blog/getting-started", ref: "google.com", screen: 1440 },
+        { path: "/pricing", ref: "google.com", screen: 1440 },
+        { path: "/docs/install", ref: "github.com", screen: 1440 },
+        { path: "/products/starter", ref: null, screen: 1440 },
+        { path: "/legal/privacy", ref: null, screen: 1440 },
+        { path: "/careers", ref: "linkedin.com", screen: 1024 },
+        { path: "/blog/cookieless-analytics", ref: "news.ycombinator.com", screen: 1280 },
+        { path: "/docs/dashboard", ref: null, screen: 1440 },
+        { path: "/products/pro", ref: "twitter.com", screen: 390 },
+        { path: "/changelog", ref: null, screen: 1440 },
+        { path: "/", ref: null, screen: 1440 },
+        { path: "/about", ref: "bing.com", screen: 1440 }
+      ]
+    };
+    function runPreset(name) { sendBatch(PRESETS[name] || []); }
+    async function runDeepSession() {
+      var paths = ["/", "/docs", "/docs/install", "/docs/tracker", "/pricing"];
+      await sendBatch(paths.map(function (p) { return { path: p, ref: "google.com", screen: 1440 }; }));
+    }
+    function runBounce() {
+      sendBatch([{ path: "/landing-bounce-" + Date.now(), ref: "google.com", screen: 1440 }]);
+    }
+
+    renderFeatures();
+    renderChecklist();
+    var spaGrid = document.getElementById("spa-routes");
+    if (spaGrid) SPA_ROUTES.forEach(function (r) {
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = r;
+      b.onclick = function () { navigate(r); };
+      spaGrid.appendChild(b);
+    });
+    var refGrid = document.getElementById("referrer-links");
+    if (refGrid) REFERRER_LANDINGS.forEach(function (item) {
+      var a = document.createElement("a");
+      a.className = "btn-link"; a.href = item.path; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = item.label;
+      refGrid.appendChild(a);
+    });
+    window.addEventListener("popstate", function () { updatePath(); log("popstate → " + location.pathname); });
+    updatePath();
+    log("Tracker loaded — start with §1 in the sidebar");
+  </script>
+</body>
+</html>

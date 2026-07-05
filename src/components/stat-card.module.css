@@ -1,0 +1,34 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.value {
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.change {
+  font-size: 0.8rem;
+  margin-top: 0.35rem;
+}
+
+.positive {
+  color: var(--positive);
+}
+
+.negative {
+  color: var(--negative);
+}
+
+.neutral {
+  color: var(--muted);
+}

@@ -1,0 +1,50 @@
+.wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  height: 100%;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.emptyWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.emptyHint {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 0;
+  opacity: 0.85;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.label {
+  padding: 0.35rem 0;
+  word-break: break-all;
+}
+
+.views {
+  text-align: right;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-left: 1rem;
+}
