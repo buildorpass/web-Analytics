@@ -87,11 +87,10 @@ Referrer landing pages live under `public/test/` (e.g. `from-google.html`, `from
 
 The app can generate a cached, AI-written summary of day-over-day metric changes. This is optional — the core analytics work without it.
 
-Copy `.env.example` to `.env` and set:
+Copy `.env.example` to `.env.local` and set your API key (uses `gpt-4o-mini` by default):
 
 ```env
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o-mini
 ```
 
 | Endpoint | Method | Purpose |

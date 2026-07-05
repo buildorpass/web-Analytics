@@ -55,12 +55,14 @@ const RESPONSE_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+
 export function getAiConfig(): AiConfigStatus {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const model = process.env.OPENAI_MODEL?.trim();
-  if (!apiKey || !model) {
+  if (!apiKey) {
     return { configured: false };
   }
+  const model = process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
   return { configured: true, apiKey, model };
 }
 
@@ -98,7 +100,7 @@ export function parseAiReportResponse(raw: string): AiDailyReport | null {
 /**
  * Calls OpenAI Chat Completions API (POST /v1/chat/completions) with json_schema
  * structured output. Verified against OpenAI docs on 2026-07-05.
- * Model name comes from OPENAI_MODEL env — not hardcoded.
+ * Model defaults to gpt-4o-mini; override with OPENAI_MODEL env if needed.
  */
 export async function generateAiDailyReport(
   input: ClassifiedDailyChangeReport

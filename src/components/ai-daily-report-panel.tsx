@@ -140,8 +140,8 @@ export function AiDailyReportPanel({ siteId, info }: AiDailyReportPanelProps) {
 
       {state.kind === "not_configured" && (
         <p className={styles.notConfigured}>
-          Add <code>OPENAI_API_KEY</code> and <code>OPENAI_MODEL</code> to{" "}
-          <code>.env.local</code> to enable AI summaries.
+          Add <code>OPENAI_API_KEY</code> to <code>.env.local</code> to enable
+          AI summaries.
         </p>
       )}
 
