@@ -77,4 +77,15 @@ export function runSchemaMigrations(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_events_site_type_timestamp
       ON events(site_id, event_type, timestamp);
   `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS daily_reports (
+      site_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      input_hash TEXT NOT NULL,
+      report_json TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (site_id, date)
+    );
+  `);
 }

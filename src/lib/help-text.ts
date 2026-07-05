@@ -95,4 +95,7 @@ export const HELP = {
 
   privacyPanel:
     "Summary of what this app collects, what it never stores, and which privacy protections are active.",
+
+  aiDailyReport:
+    "Compares today vs yesterday and the prior 7-day average using SQL only. Good/bad/neutral labels and confidence are computed in code. OpenAI writes a short summary from that JSON — it never sees raw events or does math. Results are cached per site per UTC day.",
 } as const;

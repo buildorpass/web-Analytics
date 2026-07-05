@@ -8,6 +8,7 @@ import { PrivacyPanel } from "@/components/privacy-panel";
 import { RankedList } from "@/components/ranked-list";
 import { SnippetPanel } from "@/components/snippet-panel";
 import { StatCard } from "@/components/stat-card";
+import { AiDailyReportPanel } from "@/components/ai-daily-report-panel";
 import { ChartsHub } from "@/components/charts-hub";
 import { parsePathExclusions } from "@/lib/db";
 import { HELP } from "@/lib/help-text";
@@ -104,6 +105,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           refreshInfo={HELP.refreshNow}
         />
       </Suspense>
+
+      <AiDailyReportPanel
+        siteId={selectedSiteId}
+        info={HELP.aiDailyReport}
+      />
 
       <section className={styles.stats}>
         <StatCard label="Pageviews" stat={stats.pageviews} info={HELP.pageviews} />

@@ -1,0 +1,198 @@
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.btn {
+  font: inherit;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnPrimary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.disclaimer {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.placeholder {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.notConfigured {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.notConfigured code {
+  background: var(--bg);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.error {
+  color: var(--negative);
+  font-size: 0.9rem;
+}
+
+.loading {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.headline {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  line-height: 1.35;
+}
+
+.summary {
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.sectionTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.changes {
+  list-style: none;
+  margin-bottom: 1rem;
+}
+
+.changeItem {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.changeItem:last-child {
+  border-bottom: none;
+}
+
+.verdict {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  margin-top: 0.1rem;
+}
+
+.good {
+  background: color-mix(in srgb, var(--positive) 20%, transparent);
+  color: var(--positive);
+}
+
+.bad {
+  background: color-mix(in srgb, var(--negative) 20%, transparent);
+  color: var(--negative);
+}
+
+.neutral {
+  background: color-mix(in srgb, var(--muted) 25%, transparent);
+  color: var(--muted);
+}
+
+.changeLabel {
+  font-weight: 600;
+}
+
+.changeDetail {
+  color: var(--muted);
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.actionsList {
+  list-style: none;
+  margin-bottom: 1rem;
+}
+
+.actionItem {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  padding: 0.3rem 0;
+}
+
+.actionItem::before {
+  content: "☐";
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.confidenceNote {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.cachedBadge {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-left: 0.5rem;
+  font-weight: 400;
+}
