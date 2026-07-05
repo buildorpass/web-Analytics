@@ -635,3 +635,363 @@ export function getExportSummary(
     topCampaigns: getUtmCampaigns(siteId, range),
   };
 }
+
+/** UTC day bounds [start, end] in Unix ms for YYYY-MM-DD. */
+export function getUtcDayBounds(date: string): { start: number; end: number } {
+  const start = new Date(`${date}T00:00:00.000Z`).getTime();
+  const end = start + 24 * 60 * 60 * 1000 - 1;
+  return { start, end };
+}
+
+/** Add calendar days to a UTC date string. */
+export function offsetUtcDate(date: string, days: number): string {
+  const start = new Date(`${date}T00:00:00.000Z`).getTime();
+  return new Date(start + days * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+}
+
+export interface DailyMetricSnapshot {
+  today: number;
+  yesterday: number;
+  trailing7DayAvg: number;
+  changeVsYesterdayPercent: number | null;
+  changeVsTrailing7Percent: number | null;
+  rawChangeVsYesterday: number;
+}
+
+export interface PageMover {
+  pathname: string;
+  todayRank: number | null;
+  yesterdayRank: number | null;
+  todayViews: number;
+  yesterdayViews: number;
+  kind: "new_in_top5" | "large_rank_change" | "dropped_from_top5";
+  rankChange: number | null;
+}
+
+export interface ReferrerMover {
+  referrerHostname: string;
+  todayViews: number;
+  yesterdayViews: number;
+  isNewReferrer: boolean;
+}
+
+export interface CustomEventMover {
+  eventName: string;
+  today: number;
+  yesterday: number;
+  changePercent: number | null;
+  rawChange: number;
+}
+
+export interface DailyChangeReport {
+  siteId: string;
+  date: string;
+  sampleSize: number;
+  baselineSampleSize: number;
+  metrics: {
+    pageviews: DailyMetricSnapshot;
+    uniqueVisitors: DailyMetricSnapshot;
+    bounceRate: DailyMetricSnapshot;
+    viewsPerVisitor: DailyMetricSnapshot;
+    avgSessionsPerVisitor: DailyMetricSnapshot;
+  };
+  movers: {
+    pages: PageMover[];
+    referrers: ReferrerMover[];
+    customEvents: CustomEventMover[];
+  };
+}
+
+function getTopPagesForWindow(
+  siteId: string,
+  start: number,
+  end: number,
+  limit: number
+): RankedRow[] {
+  const db = getDb();
+  return db
+    .prepare(
+      `SELECT pathname AS label, COUNT(*) AS views
+       FROM events
+       WHERE site_id = ? AND timestamp >= ? AND timestamp <= ? AND ${PAGEVIEW_FILTER}
+       GROUP BY pathname
+       ORDER BY views DESC
+       LIMIT ?`
+    )
+    .all(siteId, start, end, limit) as RankedRow[];
+}
+
+function getReferrerCountsForWindow(
+  siteId: string,
+  start: number,
+  end: number
+): Map<string, number> {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT referrer_hostname AS label, COUNT(*) AS views
+       FROM events
+       WHERE site_id = ? AND timestamp >= ? AND timestamp <= ?
+         AND referrer_hostname IS NOT NULL AND ${PAGEVIEW_FILTER}
+       GROUP BY referrer_hostname`
+    )
+    .all(siteId, start, end) as RankedRow[];
+  return new Map(rows.map((r) => [r.label, r.views]));
+}
+
+function getCustomEventCountsForWindow(
+  siteId: string,
+  start: number,
+  end: number
+): Map<string, number> {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT event_name AS label, COUNT(*) AS views
+       FROM events
+       WHERE site_id = ? AND timestamp >= ? AND timestamp <= ?
+         AND event_type = 'custom' AND event_name IS NOT NULL
+       GROUP BY event_name`
+    )
+    .all(siteId, start, end) as RankedRow[];
+  return new Map(rows.map((r) => [r.label, r.views]));
+}
+
+function buildMetricSnapshot(
+  today: number,
+  yesterday: number,
+  trailingValues: number[]
+): DailyMetricSnapshot {
+  const trailing7DayAvg =
+    trailingValues.length === 0
+      ? 0
+      : trailingValues.reduce((a, b) => a + b, 0) / trailingValues.length;
+  return {
+    today,
+    yesterday,
+    trailing7DayAvg: roundMetric(trailing7DayAvg),
+    changeVsYesterdayPercent: percentChange(today, yesterday),
+    changeVsTrailing7Percent: percentChange(today, trailing7DayAvg),
+    rawChangeVsYesterday: roundMetric(today - yesterday),
+  };
+}
+
+function roundMetric(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
+const LARGE_RANK_CHANGE = 3;
+
+function computePageMovers(
+  todayTop: RankedRow[],
+  yesterdayTop: RankedRow[]
+): PageMover[] {
+  const todayRank = new Map(
+    todayTop.map((r, i) => [r.label, { rank: i + 1, views: r.views }])
+  );
+  const yesterdayRank = new Map(
+    yesterdayTop.map((r, i) => [r.label, { rank: i + 1, views: r.views }])
+  );
+
+  const movers: PageMover[] = [];
+  const seen = new Set<string>();
+
+  for (const row of todayTop) {
+    const y = yesterdayRank.get(row.label);
+    const todayR = todayRank.get(row.label)!;
+    if (!y) {
+      movers.push({
+        pathname: row.label,
+        todayRank: todayR.rank,
+        yesterdayRank: null,
+        todayViews: row.views,
+        yesterdayViews: 0,
+        kind: "new_in_top5",
+        rankChange: null,
+      });
+      seen.add(row.label);
+      continue;
+    }
+    const rankChange = y.rank - todayR.rank;
+    if (Math.abs(rankChange) >= LARGE_RANK_CHANGE) {
+      movers.push({
+        pathname: row.label,
+        todayRank: todayR.rank,
+        yesterdayRank: y.rank,
+        todayViews: row.views,
+        yesterdayViews: y.views,
+        kind: "large_rank_change",
+        rankChange,
+      });
+      seen.add(row.label);
+    }
+  }
+
+  for (const row of yesterdayTop) {
+    if (seen.has(row.label)) continue;
+    if (!todayRank.has(row.label)) {
+      const y = yesterdayRank.get(row.label)!;
+      movers.push({
+        pathname: row.label,
+        todayRank: null,
+        yesterdayRank: y.rank,
+        todayViews: 0,
+        yesterdayViews: y.views,
+        kind: "dropped_from_top5",
+        rankChange: null,
+      });
+    }
+  }
+
+  return movers;
+}
+
+function computeReferrerMovers(
+  todayMap: Map<string, number>,
+  yesterdayMap: Map<string, number>
+): ReferrerMover[] {
+  const movers: ReferrerMover[] = [];
+  for (const [hostname, todayViews] of todayMap) {
+    const yesterdayViews = yesterdayMap.get(hostname) ?? 0;
+    if (yesterdayViews === 0 && todayViews > 0) {
+      movers.push({
+        referrerHostname: hostname,
+        todayViews,
+        yesterdayViews: 0,
+        isNewReferrer: true,
+      });
+    }
+  }
+  return movers.sort((a, b) => b.todayViews - a.todayViews);
+}
+
+function computeCustomEventMovers(
+  todayMap: Map<string, number>,
+  yesterdayMap: Map<string, number>
+): CustomEventMover[] {
+  const names = new Set([...todayMap.keys(), ...yesterdayMap.keys()]);
+  return [...names]
+    .map((eventName) => {
+      const today = todayMap.get(eventName) ?? 0;
+      const yesterday = yesterdayMap.get(eventName) ?? 0;
+      return {
+        eventName,
+        today,
+        yesterday,
+        changePercent: percentChange(today, yesterday),
+        rawChange: today - yesterday,
+      };
+    })
+    .filter((e) => e.today > 0 || e.yesterday > 0)
+    .sort((a, b) => b.today - a.today);
+}
+
+/**
+ * Pre-computed daily deltas for the AI daily change report.
+ * All arithmetic is done in SQL/TS — the LLM only interprets this JSON.
+ */
+export function getDailyChangeReport(
+  siteId: string,
+  date: string
+): DailyChangeReport {
+  const { start: todayStart, end: todayEnd } = getUtcDayBounds(date);
+  const yesterday = offsetUtcDate(date, -1);
+  const { start: yesterdayStart, end: yesterdayEnd } =
+    getUtcDayBounds(yesterday);
+
+  const todayStats = computePeriodStats(siteId, todayStart, todayEnd);
+  const yesterdayStats = computePeriodStats(
+    siteId,
+    yesterdayStart,
+    yesterdayEnd
+  );
+
+  const trailingDays: PeriodStats[] = [];
+  for (let d = 1; d <= 7; d++) {
+    const day = offsetUtcDate(date, -d);
+    const { start, end } = getUtcDayBounds(day);
+    trailingDays.push(computePeriodStats(siteId, start, end));
+  }
+
+  const trailingPageviews = trailingDays.map((s) => s.pageviews);
+  const baselineSampleSize =
+    trailingPageviews.length === 0
+      ? 0
+      : trailingPageviews.reduce((a, b) => a + b, 0) / trailingPageviews.length;
+
+  const todayTopPages = getTopPagesForWindow(
+    siteId,
+    todayStart,
+    todayEnd,
+    5
+  );
+  const yesterdayTopPages = getTopPagesForWindow(
+    siteId,
+    yesterdayStart,
+    yesterdayEnd,
+    5
+  );
+
+  const todayReferrers = getReferrerCountsForWindow(
+    siteId,
+    todayStart,
+    todayEnd
+  );
+  const yesterdayReferrers = getReferrerCountsForWindow(
+    siteId,
+    yesterdayStart,
+    yesterdayEnd
+  );
+
+  const todayCustom = getCustomEventCountsForWindow(
+    siteId,
+    todayStart,
+    todayEnd
+  );
+  const yesterdayCustom = getCustomEventCountsForWindow(
+    siteId,
+    yesterdayStart,
+    yesterdayEnd
+  );
+
+  return {
+    siteId,
+    date,
+    sampleSize: todayStats.pageviews,
+    baselineSampleSize: roundMetric(baselineSampleSize),
+    metrics: {
+      pageviews: buildMetricSnapshot(
+        todayStats.pageviews,
+        yesterdayStats.pageviews,
+        trailingPageviews
+      ),
+      uniqueVisitors: buildMetricSnapshot(
+        todayStats.uniqueVisitors,
+        yesterdayStats.uniqueVisitors,
+        trailingDays.map((s) => s.uniqueVisitors)
+      ),
+      bounceRate: buildMetricSnapshot(
+        todayStats.bounceRate,
+        yesterdayStats.bounceRate,
+        trailingDays.map((s) => s.bounceRate)
+      ),
+      viewsPerVisitor: buildMetricSnapshot(
+        todayStats.viewsPerVisitor,
+        yesterdayStats.viewsPerVisitor,
+        trailingDays.map((s) => s.viewsPerVisitor)
+      ),
+      avgSessionsPerVisitor: buildMetricSnapshot(
+        todayStats.avgSessionsPerVisitor,
+        yesterdayStats.avgSessionsPerVisitor,
+        trailingDays.map((s) => s.avgSessionsPerVisitor)
+      ),
+    },
+    movers: {
+      pages: computePageMovers(todayTopPages, yesterdayTopPages),
+      referrers: computeReferrerMovers(todayReferrers, yesterdayReferrers),
+      customEvents: computeCustomEventMovers(todayCustom, yesterdayCustom),
+    },
+  };
+}

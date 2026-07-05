@@ -8,7 +8,8 @@
     "start": "next start",
     "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
     "lint": "next lint",
-    "seed": "tsx scripts/seed-week.ts"
+    "seed": "tsx scripts/seed-week.ts",
+    "dump-report": "tsx scripts/dump-daily-report.ts"
   },
   "dependencies": {
     "better-sqlite3": "^11.9.0",
